@@ -1,0 +1,26 @@
+<html lang="ja">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width">
+        <script src="/st/master.js"></script>
+    </head>
+    <body>
+        <form name="fm" onsubmit="return false">
+            <input type="text" name="tag" placeholder="tag"><br>
+            <textarea name="text" placeholder="text"></textarea>
+            <input type="button" value="send" onclick="send()">
+        </form>
+        <script>
+            function send() {
+                let data = new FormData(document.fm);
+                formDisabled(document.fm, true);
+                post('/', data).then(res => {
+                    document.write(res);
+                }).catch(err => {
+                    console.error(err);
+                    document.write(err);
+                });
+            }
+        </script>
+    </body>
+</html>
