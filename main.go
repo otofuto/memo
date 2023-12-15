@@ -45,7 +45,6 @@ func IndexHandle(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == http.MethodGet {
 		if r.URL.Path[1:] != "" {
-			w.Header().Add("Content-Disposition", "attachment")
 			tag := r.URL.Path[1:]
 			db := database.Connect()
 			defer db.Close()
@@ -58,7 +57,9 @@ func IndexHandle(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			defer rows.Close()
+			exist := false
 			for rows.Next() {
+				exist = true
 				var str string
 				err = rows.Scan(&str)
 				if err != nil {
@@ -68,7 +69,12 @@ func IndexHandle(w http.ResponseWriter, r *http.Request) {
 				}
 				txt += str
 			}
-			fmt.Fprint(w, txt)
+			if exist {
+				w.Header().Add("Content-Disposition", "attachment")
+				fmt.Fprint(w, txt)
+			} else {
+				http.Error(w, "not found", 404)
+			}
 			return
 		}
 		http.Error(w, "content nothing", 404)
@@ -84,6 +90,13 @@ func IndexHandle(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			tag := strings.TrimSpace(r.FormValue("tag"))
+			del, err := db.Query("delete from memo where tag = '" + database.Escape(tag) + "'")
+			if err != nil {
+				log.Println(err)
+				http.Error(w, err.Error(), 500)
+				return
+			}
+			del.Close()
 			txt := r.FormValue("text")
 			page := 0
 			for len([]rune(txt)) > 0 {
@@ -113,7 +126,7 @@ func IndexHandle(w http.ResponseWriter, r *http.Request) {
 				page++
 			}
 			tran.Commit()
-			fmt.Fprint(w, "Insert OK")
+			fmt.Fprint(w, "Complete insert")
 			return
 		} else {
 			http.Error(w, "not found", 404)
